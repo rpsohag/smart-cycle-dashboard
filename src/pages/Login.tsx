@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import axios from 'axios';
+import { useNavigate } from 'react-router';
 
 const validationSchema = Yup.object({
   email: Yup.string()
@@ -14,6 +16,8 @@ const validationSchema = Yup.object({
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const formik = useFormik({
     initialValues: {
@@ -21,8 +25,24 @@ const Login: React.FC = () => {
       password: '',
     },
     validationSchema,
-    onSubmit: (values) => {
-      console.log('Login attempt with:', values);
+    onSubmit: async (values) => {
+      try {
+        const response = await axios.post('http://localhost:5050/api/auth/login', values, {
+          withCredentials: true, // Important for receiving cookies
+        });
+        
+        if (response.data.token) {
+          // Store user data if needed
+          localStorage.setItem('user', JSON.stringify(response.data.data));
+          navigate('/');
+        }
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.response?.data?.message) {
+          setError(err.response.data.message);
+        } else {
+          setError('Login failed. Please try again.');
+        }
+      }
     },
   });
 
@@ -33,6 +53,12 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-2xl">
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+        
         <div className="text-center">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-2">
             Welcome Back to SmartCycle

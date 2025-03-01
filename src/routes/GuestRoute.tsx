@@ -1,29 +1,60 @@
 
 import { Navigate } from 'react-router';
 import Login from "../pages/Login";
-import Home from '../pages/Home';
+import Dashboard from '../pages/Dashboard';
+import { useEffect, useState } from 'react';
+import { checkAuth } from '../utils/authCheck';
 
-const isAuthenticated = () => {
-  return localStorage.getItem('token') !== null;
+const AuthGuard = ({ children }: { children: React.ReactElement }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const authStatus = await checkAuth();
+      setIsAuthenticated(authStatus);
+    };
+    verifyAuth();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 const GuestGuard = ({ children }: { children: React.ReactElement }) => {
-  if (isAuthenticated()) {
-    return <Navigate to="/dashboard" replace />;
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const authStatus = await checkAuth();
+      setIsAuthenticated(authStatus);
+    };
+    verifyAuth();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>;
   }
-  return children;
+
+  return isAuthenticated ? <Navigate to="/" replace /> : children;
 };
 
 const GuestRouter = [
     {
         path: "/",
-        element: <Home />,
+        element: (
+            <AuthGuard>
+                <Dashboard />
+            </AuthGuard>
+        ),
     },
     {
         path: "/login",
         element: (
             <GuestGuard>
-            <Login />
+                <Login />
             </GuestGuard>
         ),
     }
